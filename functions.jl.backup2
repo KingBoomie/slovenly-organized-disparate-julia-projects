@@ -1,0 +1,192 @@
+### A Pluto.jl notebook ###
+# v0.12.18
+
+using Markdown
+using InteractiveUtils
+
+# This Pluto notebook uses @bind for interactivity. When running this notebook outside of Pluto, the following 'mock version' of @bind gives bound variables a default value (instead of an error).
+macro bind(def, element)
+    quote
+        local el = $(esc(element))
+        global $(esc(def)) = Core.applicable(Base.get, el) ? Base.get(el) : missing
+        el
+    end
+end
+
+# ╔═╡ bb6cae46-4108-11eb-2309-3d11f13a19fa
+begin
+	using Pkg
+	Pkg.activate(mktempdir())
+end
+
+# ╔═╡ d8b334ae-4108-11eb-2546-99e75efc18d6
+begin
+	Pkg.add(["Plots", "PlutoUI","StatsBase", "DataStructures", "Unitful", "PhysicalConstants", "UnitfulEquivalences", "DataFrames", "CSV", "Dates", "TimeZones", "StatsPlots", "ImageFiltering", "OffsetArrays"])
+
+	using Plots
+	plotly()
+	using PlutoUI
+	using StatsBase
+	using DataStructures
+	using Unitful
+	using PhysicalConstants.CODATA2018: c_0, h, ħ
+	using UnitfulEquivalences
+	using DataFrames
+	using CSV
+	using TimeZones
+	using Dates
+	using StatsPlots
+	using ImageFiltering
+	using OffsetArrays
+end
+
+# ╔═╡ dd2bc6ca-5a87-11eb-1cfd-9bbf310b48fa
+md"""
+# Functions in physics
+1. In the figure below you see a graph of some function. It is a square function.
+"""
+
+# ╔═╡ 9b1d7a9a-5a8b-11eb-3721-510c5ee70087
+md"""
+### 2. Physical example
+
+This function could be the function of velocity with regards to time with a constant _jerk_. 
+
+$$v(t) = \frac{jt^2}{2} + a_0t + v_0$$
+$$1 \frac{m}{s} = \frac{1 \frac{m}{s^3} \cdot (1 s)^2}{2} + 1 \frac{m}{s^2} \cdot 1s + 1 \frac{m}{s}$$
+
+* _$v$_ velocity - it's the first deriative of position, showing the change of change of postion. 
+* __$v_0$__ starting velocity
+* __$a_0$__ starting acceleration. acceleration is the first deriative of velocity and the second deriative of position. 
+* __$j$__ jerk - the third deriative of position. constantly changing velocity. 
+* __$t$__ time 
+"""
+
+# ╔═╡ 15a2336e-5a91-11eb-3f7b-a3e55c5a3be4
+md"""
+### 3. Integral
+
+$$v(t) = \frac{jt^2}{2} + a_0t + v_0$$
+$$ds = v\ dt =  \left( \frac{jt^2}{2} + a_0t + v_0 \right) dt$$
+$$\int_{s_0}^s ds = \int_0^t \left( \frac{jt^2}{2} + a_0t + v_0 \right) dt$$
+$$\int_{s_0}^s ds = \int_0^t \left( \frac{jt^2}{2} + a_0t + v_0 \right) dt$$
+$$s-s_0 = \frac{jt^3}{6} + \frac{a_0t^2}{2} + v_0t $$
+$$s = \frac{jt^3}{6} + \frac{a_0t^2}{2} + v_0t + s_0$$
+
+I chose to derive this integral with the limits of $(s_0, s)$ to get the positional displacement in familiar terms. (where $s_0$ is the starting positional displacement and $s$ is the final displacement)
+
+The integral of the constant jerk velocity function with regards to time is the positional displacement physical quantity. 
+"""
+
+# ╔═╡ 935814f4-5a91-11eb-2dc7-a9db013f9d95
+md"""
+
+### 4. Property of Nature
+
+The square function describes the concept of compound growth. How even a linearly changing variable, when summed up over time, changes polynominally. This can happen when measuring speed and the jerk increases linearly. 
+
+"""
+
+# ╔═╡ Cell order:
+# ╠═bb6cae46-4108-11eb-2309-3d11f13a19fa
+# ╠═d8b334ae-4108-11eb-2546-99e75efc18d6
+# ╠═e6b122ce-5548-11eb-3980-53dfd8e5897c
+# ╠═eaab22ca-5b2c-11eb-1eb6-cf73054ee98e
+# ╠═9e3c3714-5b2d-11eb-2a50-413ab7ed65d1
+# ╠═976f399e-5b2e-11eb-0405-63e0b86c7462
+# ╠═ed6d5c68-5b1f-11eb-134b-57fcc502469c
+# ╠═2c31d1ca-5b20-11eb-1f1b-db947a36b2c6
+# ╠═baf09934-5b20-11eb-3283-d9b7bdfb5a90
+# ╠═a27e9810-5b22-11eb-2985-bbe05b896e0c
+# ╠═a34b0692-5b21-11eb-050a-fb40c7ccbd73
+# ╠═7b2f2674-5b22-11eb-225c-cbd01d9b1058
+# ╠═080ecf02-5549-11eb-06cd-b10c7ed4e1e4
+# ╠═15f92d78-5b26-11eb-0050-27f2434d1f75
+# ╠═dcba4866-5b26-11eb-3e27-8fc9dd4bae77
+# ╠═2c635f9c-5cb7-11eb-128e-bb2381a1e54c
+# ╠═d49f6f5e-5cb5-11eb-14e1-45d31ab53e89
+# ╠═d7a78b2e-5cb7-11eb-1967-1b3dc0a388bd
+# ╠═15499246-5cb6-11eb-2683-d34604bf5914
+# ╠═ef39fc56-554b-11eb-3082-77349ed217d4
+# ╠═c85e156e-554a-11eb-218b-df5eabe2d8ab
+# ╠═7f5be60a-5b23-11eb-3d24-d17513534e16
+# ╠═d5b5cf78-5a87-11eb-1d85-176632857548
+# ╠═620a967e-5b2f-11eb-3dc5-6108d315124b
+# ╟─dd2bc6ca-5a87-11eb-1cfd-9bbf310b48fa
+# ╠═15988286-5a89-11eb-18e0-a54bf260bcc4
+# ╟─9b1d7a9a-5a8b-11eb-3721-510c5ee70087
+# ╠═15a2336e-5a91-11eb-3f7b-a3e55c5a3be4
+# ╠═935814f4-5a91-11eb-2dc7-a9db013f9d95
+# ╠═02b9ba5c-5a8b-11eb-39b1-0d23e4c12f0b
+# ╠═4d0b47b8-5a88-11eb-094a-1d816b3d3a9b
+# ╠═d78890c6-5a88-11eb-3601-13e50420b603
+# ╠═e7510d12-5a88-11eb-0536-8de677458800
+# ╠═ee2ef6ca-5a89-11eb-0b85-0d59759a8bac
+# ╠═de09158c-5a89-11eb-23d3-adc6acc42782
+# ╟─b2ddbdf0-5a88-11eb-3dba-03b51da9048e
+# ╠═5b8a2d9a-5a88-11eb-1193-998aca8aa0a0
+# ╠═b0a9669c-5a88-11eb-34ee-cd73f0892f7f
+# ╠═84c21a6c-4109-11eb-166e-151c460d28c8
+# ╠═50b8ef74-5591-11eb-26bf-9feb4bba0ca3
+# ╠═7b147c4e-559f-11eb-37ce-075bf3998087
+# ╠═f690e870-5591-11eb-0a58-6faf52de3fec
+# ╠═57c9516e-5591-11eb-226e-f163d5df253d
+# ╠═070ea700-5592-11eb-1334-abb3cb13262a
+# ╠═5def440c-5591-11eb-05b9-0dfd6d2952c8
+# ╠═18c7119e-5592-11eb-1afb-e71d7e7b9ca8
+# ╠═6edc69c2-5591-11eb-0b05-b35d24abe8aa
+# ╠═3ad405cc-55a0-11eb-169a-43cfdaa2d3af
+# ╠═3be46f9c-55a0-11eb-1e67-f9c641ab7eaf
+# ╠═c98e09ac-55a0-11eb-29d3-b12c978f1e57
+# ╠═3198fbb0-55a1-11eb-016e-712a7d8f07f1
+# ╠═b29c4136-55a1-11eb-0f19-85789ee1a471
+# ╠═c135bbca-559f-11eb-21d0-81f51845afcb
+# ╠═42b15790-55a0-11eb-0a84-a79553b87993
+# ╠═cc0c493c-55a0-11eb-37ee-dff68db5868b
+# ╠═cc6a6710-55a0-11eb-1da6-45a6bb3bb173
+# ╠═7f1987a6-55a1-11eb-2e64-631c13345a8f
+# ╠═ec9ee372-559f-11eb-3e88-3f4a9cd4c0ec
+# ╠═1f54ed0c-55a0-11eb-14bd-01ed4f5743e7
+# ╠═ecfdecf4-55a0-11eb-0427-d9eacdea896c
+# ╠═ed11f462-55a0-11eb-364b-6b9fd7282d48
+# ╠═3d797c44-55a0-11eb-2490-d98ffcf5f006
+# ╠═61e0edf6-55a0-11eb-0d43-69315ade5c2e
+# ╠═71d73800-55a0-11eb-28aa-895ff4f0a36b
+# ╠═a76941d0-559f-11eb-2412-bbdefbbfeb04
+# ╠═fe32a588-559f-11eb-25c8-25c3fdb3fb3f
+# ╠═045ab740-55a1-11eb-0751-a59eb196863e
+# ╠═962f7d2e-55a1-11eb-3299-215a5c9504c5
+# ╠═74fa7748-410c-11eb-0688-a37608618c96
+# ╠═fdae38fe-410c-11eb-18dd-9bae51fb4e00
+# ╠═fdbe0894-410c-11eb-0ace-3d269b2942aa
+# ╠═220ec448-410d-11eb-17c3-d1682a1588c9
+# ╠═4b4e5710-55a3-11eb-2f5d-3df5543e480c
+# ╠═5a8d3296-55a3-11eb-3d1c-65245f677262
+# ╠═75ef05aa-55a3-11eb-1c89-fd0fb600608f
+# ╠═22b3b39e-55a4-11eb-3d8e-a18fe4e18872
+# ╠═6e1b79c0-55a4-11eb-2d3f-296762a8604f
+# ╠═7c3d0eb0-55a4-11eb-3ed0-81c97785c7f0
+# ╠═7f1fb2fe-55a4-11eb-1b91-3bd39c4872fe
+# ╠═3bb15c6c-410d-11eb-1b1b-4b13708ceb70
+# ╠═0f68fa64-55a5-11eb-24ed-fd2b3fc9ed68
+# ╠═528ef22e-55a5-11eb-2b03-3d92a4b9c3c6
+# ╠═3de00658-55a5-11eb-102e-3103b223001d
+# ╠═c094cb3a-4117-11eb-168a-df762ad5739e
+# ╠═a837ef5c-55a5-11eb-06f5-cb27048bc9a4
+# ╠═c5cecd9e-55a5-11eb-343a-a3c29893be1f
+# ╠═cff2f4c4-55a5-11eb-32c2-1db64f8ea677
+# ╠═74480530-55a6-11eb-0a7b-8b30ed458234
+# ╠═b0f10e8e-55a6-11eb-34a1-755dceb63e08
+# ╠═ef0bdbcc-55a6-11eb-114f-7d43ab25736a
+# ╠═7fec90b4-411b-11eb-04db-a913940a9f22
+# ╠═451edba2-4122-11eb-0ea9-b3e5a7021bd1
+# ╠═46652b7e-4122-11eb-1576-29e34caf1b03
+# ╠═78e0e354-4122-11eb-1a11-0b1d36a38b70
+# ╠═46798970-4122-11eb-31a8-ab967162b1ae
+# ╠═20c55224-55a7-11eb-2490-010a8c63cd4b
+# ╠═c98691d4-4125-11eb-3e71-d1ffa4fc0f3a
+# ╠═aa066c66-4126-11eb-1909-713aeda74edc
+# ╠═c4375a50-4126-11eb-2667-7b693682e9a8
+# ╠═aa323b5c-4126-11eb-18fa-a5aa100d0678
+# ╠═aa487444-4126-11eb-306c-1d98f391cfc6
+# ╠═aa708326-4126-11eb-2129-df2f5666aa93

@@ -1,5 +1,5 @@
 ### A Pluto.jl notebook ###
-# v0.16.4
+# v0.17.3
 
 using Markdown
 using InteractiveUtils
@@ -7,8 +7,9 @@ using InteractiveUtils
 # This Pluto notebook uses @bind for interactivity. When running this notebook outside of Pluto, the following 'mock version' of @bind gives bound variables a default value (instead of an error).
 macro bind(def, element)
     quote
+        local iv = try Base.loaded_modules[Base.PkgId(Base.UUID("6e696c72-6542-2067-7265-42206c756150"), "AbstractPlutoDingetjes")].Bonds.initial_value catch; b -> missing; end
         local el = $(esc(element))
-        global $(esc(def)) = Core.applicable(Base.get, el) ? Base.get(el) : missing
+        global $(esc(def)) = Core.applicable(Base.get, el) ? Base.get(el) : iv(el)
         el
     end
 end
@@ -63,25 +64,6 @@ md"## kõik üle 100 000€ saajad, kelle tulu on eelmise aastaga päris palju m
 
 P.S. all tabelis rea peale vajutades tehakse selle MTÜ kohta läbi aastate muutumise graafikud"
 
-# ╔═╡ 6f3e0514-8d82-46f7-809b-8654eaa2d9e2
-sorted_ = @chain res begin
-	# filter(x -> x.KOOD ∈ by_kood.KOOD, _)
-	filter(x -> x.KOKKU > 100_000 && x.KOKKU_muutus_rel !=  1000 * rel_importance, _)
-	filter(x -> all(collect(x[all_rel_cols]) .!= 1000 * rel_importance), _)
-	transform(:KOKKU => (x -> log10.(x) .* sum_importance) => :kokku)
-	transform(selected_cols => ByRow((x...) -> sum(x)) => :cost)
-	sort(:cost, rev=true)
-	select([:KOOD, :NIMI, :KOKKU, :cost, selected_cols...])
-end
-
-# ╔═╡ ae8bbe30-7848-46b4-b463-c084d5f92627
-selected_1 = @chain inf9_all2 begin
-	subset(:KOOD => ByRow(==(clicked_sorted_kood)))
-	coalesce.(0)
-	sort(:AASTA)
-	_[!,4:9] ./= 1_000_000
-end
-
 # ╔═╡ a615112c-a3e6-42fa-b99a-986831c9a9fd
 tulud = [:KINGITUS_TULU :TOETUSE_TULU :LIIKMEMAKSU_TULU :MAJANDUS_TULU :MUU_TULU];
 
@@ -100,39 +82,11 @@ md"## kõik üle 100 000€ saajad, kes eelmisel aastal märkisid suure osa oma 
 # ╔═╡ c0ae2c9b-18fd-4303-b60c-d6ad6e56f772
 rel_cols = [ :KINGITUS_TULU_muutus_rel, :TOETUSE_TULU_muutus_rel] # Symbol.(names(res, r"rel"))
 
-# ╔═╡ 7ac4a2bd-aa01-4272-a041-5d4bd2309828
-sorted_2 = @chain res begin
-	#filter(x -> x.KOOD == 90005188, _)
-	filter(x -> x.KOKKU > 100_000 && x.KOKKU_muutus_rel != 1000 * rel_importance, _)
-	transform(rel_cols => ((x...) -> sum(x)) => :cost)
-	filter(x -> x.cost > 1_000, _)
-	sort(:KOKKU, rev=true)
-	select([:KOOD, :NIMI, :KOKKU, :cost, rel_cols...])
-end
-
-# ╔═╡ a6a20163-6ed6-463c-9054-ba63890a7691
-selected_2 = @chain inf9_all2 begin
-	filter(x -> x.KOOD == clicked_sorted_kood_2, _)
-	coalesce.(0)
-	sort(:AASTA)
-	_[!,4:9] ./= 1_000_000
-end
-
 # ╔═╡ 81639687-8845-4ebe-a94c-171fbf2c763b
 md"# data"
 
 # ╔═╡ 93bda779-ca59-46d6-bdd5-8670a594b15e
 md"## inf4 füüsilised isikud"
-
-# ╔═╡ eb1f7822-8614-461a-bd22-12f25cdfba01
-inf4_f = @chain XLSX.readtable("INF4_knd_2020_F2.xlsx", "Export") begin
-	DataFrame(_...)
-	rename!(col_mapping_4f)
-	transform(:KOOD => ByRow(k -> parse(Int, k)) => :KOOD)
-	transform(:AASTA => ByRow(k -> convert(Int, k)) => :AASTA)
-	transform(:ISIK => ByRow(sugu_vanus) => AsTable)
-	transform(:JRKNR => ByRow(k -> convert(Int, k)) => :JRKNR)
-end
 
 # ╔═╡ e033ea39-f324-4618-a760-c5bd18a3b5c8
 function sugu_vanus(isik)
@@ -145,8 +99,21 @@ end
 # ╔═╡ 50375d3c-2244-4137-b3c5-ebfd3861a7c1
 col_mapping_4f = Dict(zip(["ISIK_KOOD", "IK_ALGUS"], ["KOOD", "ISIK"]))
 
+# ╔═╡ eb1f7822-8614-461a-bd22-12f25cdfba01
+inf4_f = @chain XLSX.readtable("INF4_knd_2020_F2.xlsx", "Export") begin
+	DataFrame(_...)
+	rename!(col_mapping_4f)
+	transform(:KOOD => ByRow(k -> parse(Int, k)) => :KOOD)
+	transform(:AASTA => ByRow(k -> convert(Int, k)) => :AASTA)
+	transform(:ISIK => ByRow(sugu_vanus) => AsTable)
+	transform(:JRKNR => ByRow(k -> convert(Int, k)) => :JRKNR)
+end
+
 # ╔═╡ d1b61f6a-6439-4fd2-9cae-9f6c5bc23e6f
 md"## inf4 juriidilised isikud"
+
+# ╔═╡ 9cb10585-a20d-4c8b-9c2d-358cdc0a7c8d
+col_mapping_4j = Dict(zip(["Annetuse saaja reg.kood"], ["KOOD"]))
 
 # ╔═╡ 9050790e-47ca-4196-8567-59e5c591cfa7
 inf4_j = @chain XLSX.readtable("INF4_knd_2020_Juriidilised isikud.xlsx", "Export") begin
@@ -155,9 +122,6 @@ inf4_j = @chain XLSX.readtable("INF4_knd_2020_Juriidilised isikud.xlsx", "Export
 	transform(:KOOD => ByRow(k -> parse(Int, k)) => :KOOD)
 	transform(:AASTA => ByRow(k -> convert(Int, k)) => :AASTA)
 end
-
-# ╔═╡ 9cb10585-a20d-4c8b-9c2d-358cdc0a7c8d
-col_mapping_4j = Dict(zip(["Annetuse saaja reg.kood"], ["KOOD"]))
 
 # ╔═╡ 2eb2b55d-38a5-4270-a443-a4b43da1dbe0
 md"## inf4 combined"
@@ -171,15 +135,6 @@ inf4 = vcat(inf4_j[!, shared_cols], inf4_f[!, shared_cols])
 # ╔═╡ f91c060d-484c-4679-9a5d-664adb540559
 md"## inf9"
 
-# ╔═╡ 51fecba7-ec97-422e-bb58-65f4fd33855e
-inf9 = @chain XLSX.readtable("INF9_knd_2020.xlsx", "Export") begin
-	DataFrame(_...)
-	rename!(col_mapping)
-	transform(:KOOD => ByRow(k -> parse(Int, k)) => :KOOD)
-	transform(:AASTA => ByRow(k -> convert(Int, k)) => :AASTA)
-	transform(4 => (x -> cut(x, inf9_bins, labels=inf9_labels)) => :suurus) # väike ~ 75% MTÜdest, keskmine 75-95, suur 95-100%
-end
-
 # ╔═╡ 654e87b3-d8a3-47e7-b798-be476af899a3
 begin
 	from_colnames = ["Reg. nr.", "Aasta", "Nimi"]
@@ -189,6 +144,15 @@ begin
 	
 	inf9_labels = ["small", "medium", "large"]
 	inf9_labels2 = ["väike MTÜ (<6037€)", "keskmine MTÜ (<79690€)", "suur MTÜ"]
+end
+
+# ╔═╡ 51fecba7-ec97-422e-bb58-65f4fd33855e
+inf9 = @chain XLSX.readtable("INF9_knd_2020.xlsx", "Export") begin
+	DataFrame(_...)
+	rename!(col_mapping)
+	transform(:KOOD => ByRow(k -> parse(Int, k)) => :KOOD)
+	transform(:AASTA => ByRow(k -> convert(Int, k)) => :AASTA)
+	transform(4 => (x -> cut(x, inf9_bins, labels=inf9_labels)) => :suurus) # väike ~ 75% MTÜdest, keskmine 75-95, suur 95-100%
 end
 
 # ╔═╡ b396ea76-6347-4ab3-b82e-a6e10b332dae
@@ -235,6 +199,22 @@ begin
 	rename!(inf9_all, col_mapping1)
 end
 
+# ╔═╡ 7d3937ac-1cca-4c56-8830-162ebdd46b7b
+function muutus_rel(x)
+	rel = x[1] / x[2]
+	# abso = x[1] - x[2] 
+	
+	if isinf(rel)
+		return 1000 * rel_importance
+	elseif isnan(rel)
+		return 0
+	end
+	abs(1-rel) * rel_importance
+end
+
+# ╔═╡ b22e0cc3-c134-4815-9f1e-2b6cca3778a1
+muutus_abs(x) = log10(abs(x[1] - x[2]) + 1) * abs_importance
+
 # ╔═╡ 5efe21e3-fd04-4d04-9f08-355d8606778d
 res = @chain inf9_all begin
 	coalesce.(_, 0)
@@ -259,21 +239,26 @@ selected_cols = Symbol.([names(res, r"muutus"); :kokku]);
 # ╔═╡ 68f726b9-e70a-4e9d-bff6-3a8763d01f5c
 all_rel_cols = Symbol.(names(res, r"rel"));
 
-# ╔═╡ 7d3937ac-1cca-4c56-8830-162ebdd46b7b
-function muutus_rel(x)
-	rel = x[1] / x[2]
-	# abso = x[1] - x[2] 
-	
-	if isinf(rel)
-		return 1000 * rel_importance
-	elseif isnan(rel)
-		return 0
-	end
-	abs(1-rel) * rel_importance
+# ╔═╡ 6f3e0514-8d82-46f7-809b-8654eaa2d9e2
+sorted_ = @chain res begin
+	# filter(x -> x.KOOD ∈ by_kood.KOOD, _)
+	filter(x -> x.KOKKU > 100_000 && x.KOKKU_muutus_rel !=  1000 * rel_importance, _)
+	filter(x -> all(collect(x[all_rel_cols]) .!= 1000 * rel_importance), _)
+	transform(:KOKKU => (x -> log10.(x) .* sum_importance) => :kokku)
+	transform(selected_cols => ByRow((x...) -> sum(x)) => :cost)
+	sort(:cost, rev=true)
+	select([:KOOD, :NIMI, :KOKKU, :cost, selected_cols...])
 end
 
-# ╔═╡ b22e0cc3-c134-4815-9f1e-2b6cca3778a1
-muutus_abs(x) = log10(abs(x[1] - x[2]) + 1) * abs_importance
+# ╔═╡ 7ac4a2bd-aa01-4272-a041-5d4bd2309828
+sorted_2 = @chain res begin
+	#filter(x -> x.KOOD == 90005188, _)
+	filter(x -> x.KOKKU > 100_000 && x.KOKKU_muutus_rel != 1000 * rel_importance, _)
+	transform(rel_cols => ((x...) -> sum(x)) => :cost)
+	filter(x -> x.cost > 1_000, _)
+	sort(:KOKKU, rev=true)
+	select([:KOOD, :NIMI, :KOKKU, :cost, rel_cols...])
+end
 
 # ╔═╡ 546d31e6-0520-426a-aa76-ba6ccdbfc0ae
 simpl = filter(x -> x.KINGITUS_TULU_muutus_rel > 10 && !isinf(x.KINGITUS_TULU_muutus_rel), res)
@@ -324,17 +309,71 @@ set_aog_theme!()
 # ╔═╡ fb98f4d5-d6c1-4c5f-a0f4-2049ae79ebcd
 inf9_all2
 
-# ╔═╡ 5b17085e-a408-4fa3-b917-f1ab97ac7112
-people = @chain inf4_f begin 
-	innerjoin(_, tegevusala, kood_nimi; on=:KOOD)
-	transform(:vanus => (x -> cut(x, bins; labels)) => :bvanus)
-end
-
 # ╔═╡ f5d2ebec-8a52-456e-9bf6-929da5a37f67
 people_and_companies = vcat(inf4_f, inf4_j, cols=:union)
 
 # ╔═╡ 4c8dbee2-ebf3-484f-be50-77a74bc3d855
 axis = (width = 300, height = 300, ytickformat="{:.0f}",)
+
+# ╔═╡ 71982546-0609-4723-bd38-0833cb865be7
+@bind top_n_annetuse_tulemust html"<input type=range min=5 max=30>"
+
+# ╔═╡ c4704605-32a1-4c11-add4-22ce0c2e5baf
+top_n_annetuse_tulemust
+
+# ╔═╡ 2c5d6268-b002-4782-88d2-d082454bcde0
+top_mtu_from_axis = (
+			aspect=3, 
+			xticklabelrotation=π/4, 
+			ytickformat="{:.2f} mln €"
+			)
+
+# ╔═╡ e8b80d37-e12a-48f6-bdb4-d933e6622f66
+let plt = data(inf9_all2) * mapping(:AASTA) * visual(BarPlot, width=0.8)
+	draw(plt; axis=top_mtu_from_axis) # ????
+end
+
+# ╔═╡ 7ed75b62-544e-4e08-bd59-bcb23116c852
+
+
+# ╔═╡ dfb5a1ba-2ce1-4ed7-b476-4d46a9bd2ae7
+@bind top_n_annetust html"<input type=range min=5 max=30 label='hm'>"
+
+# ╔═╡ 5560e0ba-26a3-4dcd-a81e-080e5e3f52a0
+
+
+# ╔═╡ 9e0a571c-64b9-48f9-a6f3-322e5b362903
+top_n_annetust
+
+# ╔═╡ 7d829250-9a4b-4f83-8c1f-d68de7626acd
+
+
+# ╔═╡ fb84f920-d989-44ba-99ea-6b8d4cc135e4
+
+
+# ╔═╡ 5e5f58be-ee76-4500-9607-b5517c2a7a14
+md"# descriptive stats"
+
+# ╔═╡ d5d82300-f5fd-4d7e-8a19-33c0df0ea8d3
+function suurused(x)
+	symbols = Symbol.(x)
+	(pisile_annetusi = count(==(:small), symbols), keskmisele_annetusi = count(==(:medium), symbols), suurele_annetusi = count(==(:large), symbols))
+end
+
+# ╔═╡ 5ee5e49f-12b5-45de-a3f5-1145929d2c82
+cut(inf4_f.SUMMA, 4)
+
+# ╔═╡ 9fe8afdf-1861-42b0-aa43-62ac5dc09288
+cut(inf9[:,4], 4)
+
+# ╔═╡ c77a5d3b-687f-46d7-9043-be4312485ba3
+bins = [0, 19, 31, 61, 120]; labels=["... 18", "19...30", "31...60", "61..."]
+
+# ╔═╡ 5b17085e-a408-4fa3-b917-f1ab97ac7112
+people = @chain inf4_f begin 
+	innerjoin(_, tegevusala, kood_nimi; on=:KOOD)
+	transform(:vanus => (x -> cut(x, bins; labels)) => :bvanus)
+end
 
 # ╔═╡ 8f24f101-ba3f-43bf-91f1-22fb1501648e
 let plt = data(people) * mapping(:SUMMA => "annetuse suurus", layout=:tegevusala) * visual(alpha=0.5) * histogram(bins=range(0, 200, length=15))
@@ -354,34 +393,6 @@ by_kood = @chain people begin
 	first(top_n_annetuse_tulemust)
 end
 
-# ╔═╡ 71982546-0609-4723-bd38-0833cb865be7
-@bind top_n_annetuse_tulemust html"<input type=range min=5 max=30>"
-
-# ╔═╡ c4704605-32a1-4c11-add4-22ce0c2e5baf
-top_n_annetuse_tulemust
-
-# ╔═╡ 2c5d6268-b002-4782-88d2-d082454bcde0
-top_mtu_from_axis = (
-			aspect=3, 
-			xticklabelrotation=π/4, 
-			ytickformat="{:.2f} mln €"
-			)
-
-# ╔═╡ 227b3145-a7c4-4db2-9a03-2fe267bfc722
-let plt = data(selected_1) * tulu_map * visual(BarPlot, width=0.8)
-	draw(plt; axis=top_mtu_from_axis)
-end
-
-# ╔═╡ d4dd90ab-fed3-4925-bf19-36d169483d5f
-let plt = data(selected_2) * tulu_map * visual(BarPlot, width=0.8)
-	draw(plt; axis=top_mtu_from_axis)
-end
-
-# ╔═╡ e8b80d37-e12a-48f6-bdb4-d933e6622f66
-let plt = data(inf9_all2) * mapping(:AASTA) * visual(BarPlot, width=0.8)
-	draw(plt; axis=top_mtu_from_axis) # ????
-end
-
 # ╔═╡ 77a4dc8a-15f8-4a52-8ef4-7b72640e3810
 let plt = data(by_kood) * mapping(
 		:NIMI => sorter(by_kood.NIMI...), 
@@ -392,9 +403,6 @@ let plt = data(by_kood) * mapping(
 	draw(plt; axis=top_mtu_from_axis, figure=(resolution=(1200, 800), ))
 end
 
-# ╔═╡ 7ed75b62-544e-4e08-bd59-bcb23116c852
-
-
 # ╔═╡ e0084951-adf2-452d-bda1-2fb6a52cf316
 sorted_people = @chain people begin
 	# filter(x -> x.KOOD ∈ by_kood.KOOD, _)
@@ -403,25 +411,10 @@ sorted_people = @chain people begin
 	@aside _[!, :i] = 1:top_n_annetust
 end
 
-# ╔═╡ dfb5a1ba-2ce1-4ed7-b476-4d46a9bd2ae7
-@bind top_n_annetust html"<input type=range min=5 max=30 label='hm'>"
-
-# ╔═╡ 5560e0ba-26a3-4dcd-a81e-080e5e3f52a0
-
-
-# ╔═╡ 9e0a571c-64b9-48f9-a6f3-322e5b362903
-top_n_annetust
-
 # ╔═╡ c796dcac-10be-43a1-8a06-8d054ead4b31
 let plt = data(sorted_people) * mapping(:i => "koht nimekirjas", :SUMMA => (s -> s / 1_000_000), color=:tegevusala) * visual(BarPlot, width=0.8)
 	draw(plt, axis=top_mtu_from_axis)
 end
-
-# ╔═╡ 7d829250-9a4b-4f83-8c1f-d68de7626acd
-
-
-# ╔═╡ fb84f920-d989-44ba-99ea-6b8d4cc135e4
-
 
 # ╔═╡ d9833595-8d07-475e-bb4b-d6ab88c41485
 let plt = data(people) * expectation() * mapping(:bvanus, :SUMMA => "keskmine annetus", color=:sugu, dodge=:sugu, layout=:tegevusala)
@@ -437,33 +430,6 @@ let plt = data(people) * expectation() * mapping(:bvanus => "vanus", :SUMMA => l
 			)
 		)
 end
-
-# ╔═╡ 09c3e9da-22b5-4d1b-8568-bb5de6f4c25c
-@chain descr begin
-	groupby([:vanus, :sugu])
-	combine(:pisile_annetusi => mean => :annetuste_arv)
-	data(_) * visual(BarPlot, width=0.8) * mapping(:vanus => "Vanus", :annetuste_arv => "Keskmine annetuste arv", color=:sugu, dodge=:sugu)
-	draw(_, axis=(ytickformat="{:.1f}", xticks = LinearTicks(12), title="Pisikestele MTÜdele (kingituste kogusumma < 6000€) tehtud annetuste arv"))
-end
-
-# ╔═╡ 916bde7b-d45a-4b18-ae64-cf2dd3f5080b
-@chain descr begin
-	groupby([:vanus, :sugu])
-	combine(:keskmisele_annetusi => mean => :annetuste_arv)
-	data(_) * visual(BarPlot, width=0.8) * mapping(:vanus => "Vanus", :annetuste_arv => "Keskmine annetuste arv", color=:sugu, dodge=:sugu)
-	draw(_, axis=(ytickformat="{:.1f}", xticks = LinearTicks(12), title="Keskmistele MTÜdele (6000€ <= kingituste kogusumma < 70000€) tehtud annetuste arv"))
-end
-
-# ╔═╡ 4c1e4b36-7270-45f0-a272-6c6e2ce88ea9
-@chain descr begin
-	groupby([:vanus, :sugu])
-	combine(:suurele_annetusi => mean => :annetuste_arv)
-	data(_) * visual(BarPlot, width=0.8) * mapping(:vanus => "Vanus", :annetuste_arv => "Keskmine annetuste arv", color=:sugu, dodge=:sugu)
-	draw(_, axis=(ytickformat="{:.1f}", xticks = LinearTicks(12), title="Suurtele MTÜdele (kingituste kogusumma > 70000€) tehtud annetuste arv"))
-end
-
-# ╔═╡ 5e5f58be-ee76-4500-9607-b5517c2a7a14
-md"# descriptive stats"
 
 # ╔═╡ 94ecbff9-885e-4bd3-bbb0-93f17c5b2cdd
 descr = @chain inf4_f begin
@@ -500,10 +466,28 @@ let plt = data(descr) * visual(BoxPlot, show_notch=true, show_outliers=false) * 
 	draw(plt)
 end
 
-# ╔═╡ d5d82300-f5fd-4d7e-8a19-33c0df0ea8d3
-function suurused(x)
-	symbols = Symbol.(x)
-	(pisile_annetusi = count(==(:small), symbols), keskmisele_annetusi = count(==(:medium), symbols), suurele_annetusi = count(==(:large), symbols))
+# ╔═╡ 09c3e9da-22b5-4d1b-8568-bb5de6f4c25c
+@chain descr begin
+	groupby([:vanus, :sugu])
+	combine(:pisile_annetusi => mean => :annetuste_arv)
+	data(_) * visual(BarPlot, width=0.8) * mapping(:vanus => "Vanus", :annetuste_arv => "Keskmine annetuste arv", color=:sugu, dodge=:sugu)
+	draw(_, axis=(ytickformat="{:.1f}", xticks = LinearTicks(12), title="Pisikestele MTÜdele (kingituste kogusumma < 6000€) tehtud annetuste arv"))
+end
+
+# ╔═╡ 916bde7b-d45a-4b18-ae64-cf2dd3f5080b
+@chain descr begin
+	groupby([:vanus, :sugu])
+	combine(:keskmisele_annetusi => mean => :annetuste_arv)
+	data(_) * visual(BarPlot, width=0.8) * mapping(:vanus => "Vanus", :annetuste_arv => "Keskmine annetuste arv", color=:sugu, dodge=:sugu)
+	draw(_, axis=(ytickformat="{:.1f}", xticks = LinearTicks(12), title="Keskmistele MTÜdele (6000€ <= kingituste kogusumma < 70000€) tehtud annetuste arv"))
+end
+
+# ╔═╡ 4c1e4b36-7270-45f0-a272-6c6e2ce88ea9
+@chain descr begin
+	groupby([:vanus, :sugu])
+	combine(:suurele_annetusi => mean => :annetuste_arv)
+	data(_) * visual(BarPlot, width=0.8) * mapping(:vanus => "Vanus", :annetuste_arv => "Keskmine annetuste arv", color=:sugu, dodge=:sugu)
+	draw(_, axis=(ytickformat="{:.1f}", xticks = LinearTicks(12), title="Suurtele MTÜdele (kingituste kogusumma > 70000€) tehtud annetuste arv"))
 end
 
 # ╔═╡ 841acad1-f891-453b-b87b-700fd6fc3023
@@ -513,15 +497,6 @@ SUM = combine(groupby(descr, [:vanus, :sugu]), :SUMMA => sum)
 let plt = data(SUM) * visual(BarPlot, width=0.8) * mapping(:vanus => "Vanus", :SUMMA_sum => (x -> x / 1000) => "Annetuste summa", color=:sugu, dodge=:sugu)
 	draw(plt, axis=(ytickformat="{:.1f}k €", xticks = LinearTicks(12)))
 end
-
-# ╔═╡ 5ee5e49f-12b5-45de-a3f5-1145929d2c82
-cut(inf4_f.SUMMA, 4)
-
-# ╔═╡ 9fe8afdf-1861-42b0-aa43-62ac5dc09288
-cut(inf9[:,4], 4)
-
-# ╔═╡ c77a5d3b-687f-46d7-9043-be4312485ba3
-bins = [0, 19, 31, 61, 120]; labels=["... 18", "19...30", "31...60", "61..."]
 
 # ╔═╡ cb1317a0-5fff-4aa8-ac92-f9d3d1876b43
 descr_s = @chain descr begin
@@ -870,11 +845,37 @@ ClickedRow() = @htl("""
 # ╔═╡ de0e3e9b-8e0f-48f3-8a63-7d57f6b4c4b1
 clicked_sorted_kood = sorted_[clicked_sorted_i,:KOOD]
 
+# ╔═╡ ae8bbe30-7848-46b4-b463-c084d5f92627
+selected_1 = @chain inf9_all2 begin
+	subset(:KOOD => ByRow(==(clicked_sorted_kood)))
+	coalesce.(0)
+	sort(:AASTA)
+	_[!,4:9] ./= 1_000_000
+end
+
+# ╔═╡ 227b3145-a7c4-4db2-9a03-2fe267bfc722
+let plt = data(selected_1) * tulu_map * visual(BarPlot, width=0.8)
+	draw(plt; axis=top_mtu_from_axis)
+end
+
 # ╔═╡ b36d74e7-db05-4efc-ba5e-428003ea8ea4
 @bind clicked_sorted_i_2 ClickedRow()
 
 # ╔═╡ afba4d8c-5d87-49a3-a00c-498d442cbb90
 clicked_sorted_kood_2 = sorted_2[clicked_sorted_i_2,:KOOD];
+
+# ╔═╡ a6a20163-6ed6-463c-9054-ba63890a7691
+selected_2 = @chain inf9_all2 begin
+	filter(x -> x.KOOD == clicked_sorted_kood_2, _)
+	coalesce.(0)
+	sort(:AASTA)
+	_[!,4:9] ./= 1_000_000
+end
+
+# ╔═╡ d4dd90ab-fed3-4925-bf19-36d169483d5f
+let plt = data(selected_2) * tulu_map * visual(BarPlot, width=0.8)
+	draw(plt; axis=top_mtu_from_axis)
+end
 
 # ╔═╡ 485188ca-2759-49c2-93c6-3da34dd0e686
 Base.show(io::IO, ::MIME"text/html", x::CategoricalArrays.CategoricalValue) = print(io, get(x))
@@ -1036,9 +1037,9 @@ version = "0.6.6"
 
 [[Cairo_jll]]
 deps = ["Artifacts", "Bzip2_jll", "Fontconfig_jll", "FreeType2_jll", "Glib_jll", "JLLWrappers", "LZO_jll", "Libdl", "Pixman_jll", "Pkg", "Xorg_libXext_jll", "Xorg_libXrender_jll", "Zlib_jll", "libpng_jll"]
-git-tree-sha1 = "f2202b55d816427cd385a9a4f3ffb226bee80f99"
+git-tree-sha1 = "4b859a208b2397a7a623a03449e4636bdb17bcf2"
 uuid = "83423d85-b0ee-5818-9007-b63ccbeb887a"
-version = "1.16.1+0"
+version = "1.16.1+1"
 
 [[CategoricalArrays]]
 deps = ["DataAPI", "Future", "Missings", "Printf", "Requires", "Statistics", "Unicode"]
@@ -1319,9 +1320,9 @@ version = "0.21.0+0"
 
 [[Glib_jll]]
 deps = ["Artifacts", "Gettext_jll", "JLLWrappers", "Libdl", "Libffi_jll", "Libiconv_jll", "Libmount_jll", "PCRE_jll", "Pkg", "Zlib_jll"]
-git-tree-sha1 = "7bf67e9a481712b3dbe9cb3dac852dc4b1162e02"
+git-tree-sha1 = "a32d672ac2c967f3deb8a81d828afc739c838a06"
 uuid = "7746bdde-850d-59dc-9ae8-88ece973131d"
-version = "2.68.3+0"
+version = "2.68.3+2"
 
 [[GraphMakie]]
 deps = ["GeometryBasics", "Graphs", "LinearAlgebra", "Makie", "NetworkLayout", "StaticArrays"]
@@ -1360,9 +1361,9 @@ version = "1.0.2"
 
 [[HarfBuzz_jll]]
 deps = ["Artifacts", "Cairo_jll", "Fontconfig_jll", "FreeType2_jll", "Glib_jll", "Graphite2_jll", "JLLWrappers", "Libdl", "Libffi_jll", "Pkg"]
-git-tree-sha1 = "8a954fed8ac097d5be04921d595f741115c1b2ad"
+git-tree-sha1 = "129acf094d168394e80ee1dc4bc06ec835e510a3"
 uuid = "2e76f6c2-a576-52d4-95c1-20adfe4de566"
-version = "2.8.1+0"
+version = "2.8.1+1"
 
 [[Hwloc]]
 deps = ["Hwloc_jll"]
@@ -1552,9 +1553,9 @@ uuid = "8f399da3-3557-5675-b5ff-fb832c97cbdb"
 
 [[Libffi_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl", "Pkg"]
-git-tree-sha1 = "761a393aeccd6aa92ec3515e428c26bf99575b3b"
+git-tree-sha1 = "0b4a5d71f3e5200a7dff793393e09dfc2d874290"
 uuid = "e9f186c6-92d2-5b65-8a66-fee21dc1b490"
-version = "3.2.2+0"
+version = "3.2.2+1"
 
 [[Libgcrypt_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl", "Libgpg_error_jll", "Pkg"]
@@ -1593,7 +1594,7 @@ uuid = "093fc24a-ae57-5d10-9952-331d41423f4d"
 version = "1.3.5"
 
 [[LinearAlgebra]]
-deps = ["Libdl"]
+deps = ["Libdl", "libblastrampoline_jll"]
 uuid = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
 
 [[Loess]]
@@ -1728,9 +1729,13 @@ version = "1.10.7"
 
 [[Ogg_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl", "Pkg"]
-git-tree-sha1 = "7937eda4681660b4d6aeeecc2f7e1c81c8ee4e2f"
+git-tree-sha1 = "887579a3eb005446d514ab7aeac5d1d027658b8f"
 uuid = "e7412a2a-1a6e-54c0-be00-318e2571c051"
-version = "1.3.5+0"
+version = "1.3.5+1"
+
+[[OpenBLAS_jll]]
+deps = ["Artifacts", "CompilerSupportLibraries_jll", "Libdl"]
+uuid = "4536629a-c528-5b80-bd46-f80d51c5b363"
 
 [[OpenEXR]]
 deps = ["Colors", "FileIO", "OpenEXR_jll"]
@@ -1891,7 +1896,7 @@ deps = ["InteractiveUtils", "Markdown", "Sockets", "Unicode"]
 uuid = "3fa0cd96-eef1-5676-8a61-b3b8758bbffb"
 
 [[Random]]
-deps = ["Serialization"]
+deps = ["SHA", "Serialization"]
 uuid = "9a3f8284-a2c9-5f02-9a11-845980a1fd5c"
 
 [[Ratios]]
@@ -2254,6 +2259,10 @@ git-tree-sha1 = "5982a94fcba20f02f42ace44b9894ee2b140fe47"
 uuid = "0ac62f75-1d6f-5e53-bd7c-93b484bb37c0"
 version = "0.15.1+0"
 
+[[libblastrampoline_jll]]
+deps = ["Artifacts", "Libdl", "OpenBLAS_jll"]
+uuid = "8e850b90-86db-534c-a0d3-1478176c7d93"
+
 [[libfdk_aac_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl", "Pkg"]
 git-tree-sha1 = "daacc84a041563f965be61859a36e17c4e4fcd55"
@@ -2268,9 +2277,9 @@ version = "1.6.38+0"
 
 [[libvorbis_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl", "Ogg_jll", "Pkg"]
-git-tree-sha1 = "c45f4e40e7aafe9d086379e5578947ec8b95a8fb"
+git-tree-sha1 = "b910cb81ef3fe6e78bf6acee440bda86fd6ae00c"
 uuid = "f27f6e37-5d2b-51aa-960f-b287f2bc3b7a"
-version = "1.3.7+0"
+version = "1.3.7+1"
 
 [[nghttp2_jll]]
 deps = ["Artifacts", "Libdl"]

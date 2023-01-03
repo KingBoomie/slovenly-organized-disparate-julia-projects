@@ -1,6 +1,9 @@
 module glmakie
 
 using GLMakie
+using Chain
+using DelimitedFiles
+
 fig = Figure()
 
 menu = Menu(fig, options = ["viridis", "heat", "blues"])
